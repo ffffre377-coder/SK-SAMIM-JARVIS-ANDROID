@@ -1,5 +1,7 @@
 package com.samim.jarvis.api
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -41,5 +43,24 @@ class ApiManager @Inject constructor() {
             .addConverterFactory(MoshiConverterFactory.create())
             .build()
         return retrofit.create(GeminiService::class.java)
+    }
+
+    suspend fun testConnection(baseUrl: String, apiKey: String?, testPath: String = "v1/models"): Result<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val client = baseClient(apiKey)
+                val url = if (baseUrl.endsWith("/")) baseUrl + testPath else "$baseUrl/$testPath"
+                val request = Request.Builder().url(url).get().build()
+                client.newCall(request).execute().use { resp ->
+                    if (resp.isSuccessful) {
+                        Result.success("Success: ${resp.code}")
+                    } else {
+                        Result.failure(Exception("HTTP ${resp.code}: ${resp.message}"))
+                    }
+                }
+            } catch (e: Throwable) {
+                Result.failure(e)
+            }
+        }
     }
 }
