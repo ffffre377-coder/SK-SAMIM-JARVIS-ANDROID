@@ -1,39 +1,32 @@
-package com.samim.jarvis.ai
-
-import com.samim.jarvis.memory.ConversationDao
-import com.samim.jarvis.memory.Message
-import com.samim.jarvis.memory.MessageDao
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import javax.inject.Inject
-import javax.inject.Singleton
-
-@Singleton
-class ChatRepository @Inject constructor(
-    private val providerManager: AIProviderManager,
-    private val conversationDao: ConversationDao,
-    private val messageDao: MessageDao
-) {
-
-    suspend fun sendUserMessage(conversationId: Long, messageText: String): Result<Any> {
-        return try {
-            // persist user message
-            val userMessage = Message(conversationId = conversationId, sender = "user", content = messageText)
-            withContext(Dispatchers.IO) { messageDao.insert(userMessage) }
-
-            // prepare payload (simple form)
-            val payload = mapOf("messages" to listOf(mapOf("role" to "user", "content" to messageText)))
-
-            val response = withContext(Dispatchers.IO) { providerManager.sendWithFallback(payload) }
-
-            // persist assistant response as stringified
-            val assistantText = response.toString()
-            val assistantMessage = Message(conversationId = conversationId, sender = "assistant", content = assistantText)
-            withContext(Dispatchers.IO) { messageDao.insert(assistantMessage) }
-
-            Result.success(response)
-        } catch (e: Throwable) {
-            Result.failure(e)
-        }
-    }
-}
+*** Begin Patch
+*** Update File: ai-engine/src/main/java/com/samim/jarvis/ai/ChatRepository.kt
+@@
+-    suspend fun sendUserMessage(conversationId: Long, messageText: String): Result<Any> {
++    suspend fun sendUserMessage(conversationId: Long, messageText: String, personalityMode: String? = null): Result<Any> {
+         return try {
+@@
+-            // prepare payload (simple form)
+-            val payload = mapOf("messages" to listOf(mapOf("role" to "user", "content" to messageText)))
+-
+-            val response = withContext(Dispatchers.IO) { providerManager.sendWithFallback(payload) }
++            // prepare payload (add personality system prompt if provided)
++            val messages = mutableListOf<Map<String, String>>()
++            if (!personalityMode.isNullOrBlank()) {
++                val systemPrompt = when (personalityMode) {
++                    "Friendly" -> "You are a helpful and friendly assistant. Speak like a helpful friend."
++                    "Funny" -> "You are a witty assistant who adds light humor to responses. Be polite and humorous."
++                    "Emotional" -> "You are empathetic and caring. Understand feelings and reply in a supportive way."
++                    "Professional" -> "You are professional and concise. Provide expert and serious answers."
++                    "JARVIS" -> "You are a futuristic AI assistant — precise, smart, and slightly formal."
++                    "CasualFriend" -> "You speak in a friendly Hinglish tone: mix Hindi and English casually when appropriate."
++                    "Motivational" -> "You are encouraging and motivational — give positive and uplifting responses."
++                    else -> "You are a helpful assistant."
++                }
++                messages.add(mapOf("role" to "system", "content" to systemPrompt))
++            }
++            messages.add(mapOf("role" to "user", "content" to messageText))
++
++            val payload = mapOf("messages" to messages)
++
++            val response = withContext(Dispatchers.IO) { providerManager.sendWithFallback(payload) }
+*** End Patch

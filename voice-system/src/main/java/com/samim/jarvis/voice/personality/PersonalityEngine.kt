@@ -11,9 +11,12 @@ interface PersonalityEngine {
 
 enum class PersonalityMode {
     Friendly,
+    Funny,
+    Emotional,
     Professional,
-    Calm,
-    Funny
+    JARVIS,
+    CasualFriend,
+    Motivational
 }
 
 class DefaultPersonalityEngine : PersonalityEngine {

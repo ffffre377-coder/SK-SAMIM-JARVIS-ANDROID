@@ -3,39 +3,32 @@
 @@
      private val personalityEngine by lazy { com.samim.jarvis.voice.personality.DefaultPersonalityEngine() }
      private val emotionEngine by lazy { com.samim.jarvis.voice.emotion.DefaultEmotionEngine() }
-+    // Memory repository
-+    private val memoryRepo by lazy { com.samim.jarvis.memory.EncryptedMemoryRepository(secureStorage) }
+     // Memory repository
+     private val memoryRepo by lazy { com.samim.jarvis.memory.EncryptedMemoryRepository(secureStorage) }
++    // load persisted personality mode
++    init {
++        val saved = secureStorage.getString("personality_mode")
++        if (!saved.isNullOrBlank()) {
++            try {
++                val mode = com.samim.jarvis.voice.personality.PersonalityMode.valueOf(saved)
++                personalityEngine.setMode(mode)
++            } catch (e: Exception) {
++                // ignore invalid stored value
++            }
++        }
++    }
 @@
-     init {
-         // load preferences
-@@
-         sttManager.setListener(object : SpeechToTextManager.Listener {
-@@
-             override fun onResult(text: String) {
-                 _state.value = _state.value.copy(lastTranscript = text, listening = false)
-                 lastTranscriptText = text
- 
-                 // Route through command parsing and phone-control first, with AI fallback
-                 viewModelScope.launch {
-+                    // Load memory-derived context (e.g., nickname) to include in AI fallback
-+                    val nickname = memoryRepo.getString("nickname")
-+                    val memoryContext = mutableMapOf<String, String>()
-+                    if (!nickname.isNullOrBlank()) memoryContext["nickname"] = nickname
+-    fun setFemalePreferred(pref: Boolean) {
++    fun setFemalePreferred(pref: Boolean) {
+         secureStorage.putString("voice_female", pref.toString())
+         _state.value = _state.value.copy(femalePreferred = pref)
+         ttsManager.setPreferredFemale(pref)
+     }
 +
-                     val locale = Locale.forLanguageTag(_state.value.language)
-                     val parsed = com.samim.jarvis.voice.command.CommandParser.parse(text, locale)
-@@
-                     if (handledLocally) {
-@@
-                         )
-                     } else {
-                         // Not a local command — send to AI
--                        callAiAndSpeak(text)
-+                        // Inject memory context into AI prompt via chatRepository (if supported)
-+                        val finalText = if (memoryContext.isNotEmpty()) "[context=${memoryContext}]
-+$text" else text
-+                        callAiAndSpeak(finalText)
-                     }
-                 }
-             }
++    fun setPersonality(mode: com.samim.jarvis.voice.personality.PersonalityMode) {
++        personalityEngine.setMode(mode)
++        secureStorage.putString("personality_mode", mode.name)
++        // update UI state if desired
++        _state.value = _state.value.copy(personalityMode = mode.name)
++    }
 *** End Patch
