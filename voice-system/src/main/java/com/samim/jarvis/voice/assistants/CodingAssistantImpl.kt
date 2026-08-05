@@ -1,30 +1,58 @@
 package com.samim.jarvis.voice.assistants
 
-import android.content.Context
+import com.samim.jarvis.ai.ChatRepository
 import com.samim.jarvis.security.SecureStorage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-interface CodingAssistant {
-    suspend fun generateTemplate(language: String, name: String): String
-    suspend fun explainError(code: String, errorMessage: String): String
-    suspend fun saveSnippet(title: String, code: String): String
-}
+/**
+ * CodingAssistant implementation with optional AI integration.
+ * If a ChatRepository is provided, code generation and error explanation will call the AI.
+ * Otherwise, it falls back to local templates and heuristics.
+ */
+class CodingAssistantImpl(
+    private val contextArg: android.content.Context,
+    private val secureStorage: SecureStorage,
+    private val chatRepository: ChatRepository? = null
+) : CodingAssistant {
 
-class CodingAssistantImpl(context: Context, secureStorage: SecureStorage) : CodingAssistant {
     private val repo = SecureSnippetRepository(secureStorage)
 
     override suspend fun generateTemplate(language: String, name: String): String {
-        return when (language.lowercase()) {
-            "python" -> "# $name.py\ndef main():\n    print(\"Hello from $name\")\n\nif __name__ == '__main__':\n    main()"
-            "java" -> "public class $name {\n    public static void main(String[] args) {\n        System.out.println(\"Hello from $name\");\n    }\n}"
-            "kotlin" -> "fun main() {\n    println(\"Hello from $name\")\n}"
-            "javascript" -> "function main() {\n    console.log('Hello from $name');\n}\nmain();"
-            "html" -> "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>$name</title></head><body><h1>Hello from $name</h1></body></html>"
-            else -> "// No template available for $language"
+        // If AI is available, ask it to generate a short template
+        if (chatRepository != null) {
+            return try {
+                val prompt = "Generate a concise $language project template named $name. Include a main entry point and a short comment explaining usage."
+                val res = chatRepository.sendUserMessage(1, prompt)
+                if (res.isSuccess) {
+                    res.getOrNull()?.toString() ?: localTemplate(language, name)
+                } else localTemplate(language, name)
+            } catch (e: Exception) {
+                localTemplate(language, name)
+            }
         }
+        return localTemplate(language, name)
+    }
+
+    private fun localTemplate(language: String, name: String): String = when (language.lowercase()) {
+        "python" -> "# $name.py\ndef main():\n    print(\"Hello from $name\")\n\nif __name__ == '__main__':\n    main()"
+        "java" -> "public class $name {\n    public static void main(String[] args) {\n        System.out.println(\"Hello from $name\");\n    }\n}"
+        "kotlin" -> "fun main() {\n    println(\"Hello from $name\")\n}"
+        "javascript" -> "function main() {\n    console.log('Hello from $name');\n}\nmain();"
+        "html" -> "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>$name</title></head><body><h1>Hello from $name</h1></body></html>"
+        else -> "// No template available for $language"
     }
 
     override suspend fun explainError(code: String, errorMessage: String): String {
-        // Simple heuristic explanation — real implementation may use AI
+        if (chatRepository != null) {
+            return try {
+                val prompt = "I have this code:\n```\n$code\n```\nIt produced the following error:\n$errorMessage\nPlease explain the likely causes and show a corrected snippet if possible."
+                val res = chatRepository.sendUserMessage(1, prompt)
+                if (res.isSuccess) res.getOrNull()?.toString() ?: "I saw an error: $errorMessage" else "I saw an error: $errorMessage"
+            } catch (e: Exception) {
+                "I saw an error: $errorMessage"
+            }
+        }
         return "I saw an error: $errorMessage. Check common issues: syntax errors, missing imports, or wrong indentation. If you share the code and the full stack trace I can help more."
     }
 
