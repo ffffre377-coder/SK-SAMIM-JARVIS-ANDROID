@@ -10,6 +10,8 @@ import com.samim.jarvis.memory.AppDatabase
 import com.samim.jarvis.memory.ConversationDao
 import com.samim.jarvis.memory.MessageDao
 import com.samim.jarvis.security.SecureStorage
+import com.samim.jarvis.voice.SpeechToTextManager
+import com.samim.jarvis.voice.TextToSpeechManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -38,6 +40,18 @@ object AppModule {
     @Provides
     @Singleton
     fun provideSecureStorage(@ApplicationContext context: Context): SecureStorage = SecureStorage(context)
+
+    @Provides
+    @Singleton
+    fun provideApiManager(): ApiManager = ApiManager()
+
+    @Provides
+    @Singleton
+    fun provideTextToSpeechManager(@ApplicationContext context: Context): TextToSpeechManager = TextToSpeechManager(context)
+
+    @Provides
+    @Singleton
+    fun provideSpeechToTextManager(@ApplicationContext context: Context): SpeechToTextManager = SpeechToTextManager(context)
 
     @Provides
     @Singleton

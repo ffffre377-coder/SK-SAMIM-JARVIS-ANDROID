@@ -2,6 +2,8 @@
     package="com.samim.jarvis">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:name="com.samim.jarvis.JarvisApplication"
@@ -15,6 +17,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Voice assistant service (wake-word / STT) will be added later -->
     </application>
 
 </manifest>
