@@ -25,7 +25,8 @@ object ContactSearch {
                     arrayOf(id), null
                 )
                 phones?.use { p ->
-                    if (p.moveToFirst()) {
+                    // collect all available phone numbers for the contact
+                    while (p.moveToNext()) {
                         val num = p.getString(p.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER))
                         out.add(Pair(display ?: "Unknown", num))
                     }
