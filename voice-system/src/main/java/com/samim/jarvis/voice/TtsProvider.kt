@@ -7,6 +7,7 @@ interface TtsProvider {
         voice: String? = null,
         speed: Float? = null,
         pitch: Float? = null,
-        lang: String? = null
+        lang: String? = null,
+        meta: Map<String, String>? = null
     ): Result<ByteArray>
 }

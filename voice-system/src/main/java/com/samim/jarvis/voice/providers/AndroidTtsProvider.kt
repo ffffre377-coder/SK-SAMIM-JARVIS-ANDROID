@@ -13,21 +13,18 @@ class AndroidTtsProvider(private val ttsManager: TextToSpeechManager) : TtsProvi
         voice: String?,
         speed: Float?,
         pitch: Float?,
-        lang: String?
+        lang: String?,
+        meta: Map<String, String>?
     ): Result<ByteArray> {
-        // Use TextToSpeechManager to speak directly as an offline fallback.
-        // Return an empty byte array to signal the caller that Android TTS handled playback.
         return try {
             withContext(Dispatchers.Main) {
-                if (!voice.isNullOrBlank()) {
-                    // Note: voice selection for AndroidTTS may be handled by TextToSpeechManager internals.
-                }
-                // Configure speed/pitch if provided
                 speed?.let { ttsManager.setSpeechRate(it) }
                 pitch?.let { ttsManager.setPitch(it) }
                 lang?.let { ttsManager.setLanguage(java.util.Locale.forLanguageTag(it)) }
+                // Personality/emotion hints may be in meta but Android TTS will only use rate/pitch for now
                 ttsManager.speak(text)
             }
+            // empty bytes indicate playback handled directly
             Result.success(ByteArray(0))
         } catch (t: Throwable) {
             Result.failure(t)
