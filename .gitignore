@@ -1,0 +1,28 @@
+# Android Studio / Gradle
+/.gradle
+/local.properties
+
+# Build outputs
+/**/build
+
+# Android Studio
+/.idea
+*.iml
+
+# Kotlin
+*.kotlin_module
+
+# Logs
+*.log
+
+# Mac
+.DS_Store
+
+# Secrets
+local.properties
+
+# Generated
+app/src/main/google-services.json
+
+# Kotlin/Compose
+.gradle
