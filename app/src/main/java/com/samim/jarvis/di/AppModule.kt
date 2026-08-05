@@ -10,8 +10,13 @@ import com.samim.jarvis.memory.AppDatabase
 import com.samim.jarvis.memory.ConversationDao
 import com.samim.jarvis.memory.MessageDao
 import com.samim.jarvis.security.SecureStorage
+import com.samim.jarvis.voice.ElevenLabsTtsAdapter
+import com.samim.jarvis.voice.GoogleTtsAdapter
 import com.samim.jarvis.voice.PorcupineManager
 import com.samim.jarvis.voice.SpeechToTextManager
+import com.samim.jarvis.voice.TtsPlayback
+import com.samim.jarvis.voice.TtsProvider
+import com.samim.jarvis.voice.TtsProviderManager
 import com.samim.jarvis.voice.TextToSpeechManager
 import dagger.Module
 import dagger.Provides
@@ -57,6 +62,23 @@ object AppModule {
     @Provides
     @Singleton
     fun providePorcupineManager(@ApplicationContext context: Context): PorcupineManager = PorcupineManager(context)
+
+    @Provides
+    @Singleton
+    fun provideTtsPlayback(@ApplicationContext context: Context): TtsPlayback = TtsPlayback(context)
+
+    @Provides
+    @Singleton
+    fun provideTtsProviders(secureStorage: SecureStorage): List<TtsProvider> {
+        return listOf(
+            ElevenLabsTtsAdapter(secureStorage),
+            GoogleTtsAdapter(secureStorage)
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun provideTtsProviderManager(providers: List<TtsProvider>, secureStorage: SecureStorage): TtsProviderManager = TtsProviderManager(providers, secureStorage)
 
     @Provides
     @Singleton

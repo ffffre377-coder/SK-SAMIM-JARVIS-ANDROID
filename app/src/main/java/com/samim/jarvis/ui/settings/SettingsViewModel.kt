@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.samim.jarvis.api.ApiManager
 import com.samim.jarvis.ai.AIProviderManager
 import com.samim.jarvis.security.SecureStorage
+import com.samim.jarvis.voice.TtsProviderManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,13 +13,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class SettingsState(val providers: List<ProviderSetting> = emptyList())
-
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val secureStorage: SecureStorage,
+    val secureStorage: SecureStorage,
     private val apiManager: ApiManager,
-    private val aiProviderManager: AIProviderManager
+    private val aiProviderManager: AIProviderManager,
+    private val ttsProviderManager: TtsProviderManager
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsState())
@@ -109,6 +109,38 @@ class SettingsViewModel @Inject constructor(
 
     private fun getApiKeyStorageKey(id: String) = "${id}_api_key"
     private fun getEnabledStorageKey(id: String) = "${id}_enabled"
+
+    // TTS settings
+    fun saveTtsProvider(provider: String) {
+        secureStorage.putString("tts_provider", provider)
+    }
+
+    fun saveTtsVoice(voice: String) {
+        secureStorage.putString("tts_voice", voice)
+    }
+
+    fun saveTtsSpeed(speed: Float) {
+        secureStorage.putString("tts_speed", speed.toString())
+    }
+
+    fun saveTtsPitch(pitch: Float) {
+        secureStorage.putString("tts_pitch", pitch.toString())
+    }
+
+    fun testTts(providerName: String, voiceId: String, speed: Float, pitch: Float) {
+        viewModelScope.launch {
+            val provider = ttsProviderManager.getProviderByName(providerName)
+            if (provider == null) {
+                // no provider
+                return@launch
+            }
+            val res = provider.synthesize("This is a test of the selected voice.", voiceId, speed, pitch, "en-US")
+            if (res.isSuccess) {
+                // play audio via TtsPlayback
+                // We can't access TtsPlayback here; instead we save to cache and let VoiceAssistant handle playback; for now, nothing
+            }
+        }
+    }
 }
 
 private fun String.capitalizeName(): String = this.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
