@@ -18,7 +18,7 @@ import javax.inject.Inject
 class VoiceAssistantService : Service() {
 
     @Inject
-    lateinit var porcupineManager: PorcupineManager
+    lateinit var wakeWordManager: WakeWordManager
 
     @Inject
     lateinit var sttManager: SpeechToTextManager
@@ -34,14 +34,17 @@ class VoiceAssistantService : Service() {
         super.onCreate()
         createNotificationChannel()
 
-        // Hook porcupine wake-word event to start STT
-        porcupineManager.setListener(object : PorcupineManager.Listener {
-            override fun onWakeWordDetected() {
+        // Hook wake-word event to start STT
+        wakeWordManager.setListener(object : WakeWordManager.Listener {
+            override fun onWakeWord() {
                 Log.d("VoiceService", "Wake-word detected: starting STT")
                 // Start listening with current language (default en-US) - ViewModel preferences control language selection
                 sttManager.startListening()
             }
         })
+
+        // Start manager if enabled
+        if (wakeWordManager.isEnabled()) wakeWordManager.start()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -54,8 +57,8 @@ class VoiceAssistantService : Service() {
     }
 
     private fun startForegroundServiceWithNotification() {
-        // Start Porcupine (scaffold) and run as foreground service to improve reliability
-        porcupineManager.start()
+        // Start WakeWordManager (scaffold) and run as foreground service to improve reliability
+        wakeWordManager.start()
         val notification = buildNotification()
         startForeground(NOTIF_ID, notification)
     }
@@ -66,7 +69,7 @@ class VoiceAssistantService : Service() {
 
         return NotificationCompat.Builder(this, NOTIF_CHANNEL_ID)
             .setContentTitle("Jarvis Voice Assistant")
-            .setContentText("Wake-word listening for 'Hey Jarvis'")
+            .setContentText("Wake-word listening for 'Hey Samim'")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .addAction(android.R.drawable.ic_media_pause, "Stop", pendingStop)
             .setOngoing(true)
@@ -88,7 +91,7 @@ class VoiceAssistantService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        porcupineManager.stop()
+        wakeWordManager.stop()
         sttManager.release()
     }
 }
