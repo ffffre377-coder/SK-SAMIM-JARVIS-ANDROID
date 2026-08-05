@@ -1,7 +1,8 @@
 package com.samim.jarvis.ui.voice
 
 import android.Manifest
-import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -61,7 +62,22 @@ fun VoiceAssistantScreen(viewModel: com.samim.jarvis.voice.VoiceAssistantViewMod
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
             Text("Wake-word (Hey Jarvis)")
-            Switch(checked = state.wakeWordEnabled, onCheckedChange = { viewModel.setWakeWordEnabled(it) })
+            Switch(checked = state.wakeWordEnabled, onCheckedChange = {
+                viewModel.setWakeWordEnabled(it)
+                // Start or stop foreground service for wake-word detection
+                val svcIntent = Intent(context, com.samim.jarvis.voice.VoiceAssistantService::class.java)
+                if (it) {
+                    svcIntent.action = com.samim.jarvis.voice.VoiceAssistantService.ACTION_START
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        context.startForegroundService(svcIntent)
+                    } else {
+                        context.startService(svcIntent)
+                    }
+                } else {
+                    svcIntent.action = com.samim.jarvis.voice.VoiceAssistantService.ACTION_STOP
+                    context.startService(svcIntent)
+                }
+            })
         }
 
         Spacer(modifier = Modifier.padding(8.dp))

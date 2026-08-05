@@ -10,6 +10,7 @@ import com.samim.jarvis.memory.AppDatabase
 import com.samim.jarvis.memory.ConversationDao
 import com.samim.jarvis.memory.MessageDao
 import com.samim.jarvis.security.SecureStorage
+import com.samim.jarvis.voice.PorcupineManager
 import com.samim.jarvis.voice.SpeechToTextManager
 import com.samim.jarvis.voice.TextToSpeechManager
 import dagger.Module
@@ -52,6 +53,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideSpeechToTextManager(@ApplicationContext context: Context): SpeechToTextManager = SpeechToTextManager(context)
+
+    @Provides
+    @Singleton
+    fun providePorcupineManager(@ApplicationContext context: Context): PorcupineManager = PorcupineManager(context)
 
     @Provides
     @Singleton

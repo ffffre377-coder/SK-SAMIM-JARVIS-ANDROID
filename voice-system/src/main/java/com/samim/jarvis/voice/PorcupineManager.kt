@@ -21,6 +21,11 @@ class PorcupineManager(private val context: Context) {
 
     fun start() {
         // TODO: Initialize Porcupine engine and start audio capture
+        // Example integration steps (not implemented here):
+        // 1) Load Porcupine native library and keyword model
+        // 2) Create Porcupine instance with the keyword "hey jarvis" model
+        // 3) Start recording audio (AudioRecord) and pass frames into Porcupine
+        // 4) On detection, call listener?.onWakeWordDetected()
         running = true
         Log.d("Porcupine", "start scaffold - integrate Porcupine SDK and models")
     }

@@ -18,7 +18,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Voice assistant service (wake-word / STT) will be added later -->
+        <service android:name="com.samim.jarvis.voice.VoiceAssistantService" android:exported="false" />
     </application>
 
 </manifest>
