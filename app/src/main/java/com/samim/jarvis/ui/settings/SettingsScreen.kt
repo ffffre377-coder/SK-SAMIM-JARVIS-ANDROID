@@ -10,21 +10,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.samim.jarvis.voice.TtsProviderManager
-import dagger.hilt.android.EntryPointAccessors
 import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
 
-    // TTS section
-    val ttsManager = EntryPointAccessors.fromApplication(context, com.samim.jarvis.di.HiltEntryPoints::class.java).ttsProviderManager()
-    val providers = ttsManager.listProviders()
-    var selected by remember { mutableStateOf(ttsManager.getSelectedProviderName()) }
-    var voiceId by remember { mutableStateOf(viewModel.secureStorage.getString("tts_voice") ?: "") }
-    var speed by remember { mutableStateOf(viewModel.secureStorage.getString("tts_speed")?.toFloatOrNull() ?: 1.0f) }
-    var pitch by remember { mutableStateOf(viewModel.secureStorage.getString("tts_pitch")?.toFloatOrNull() ?: 1.0f) }
+    // TTS provider list from ViewModel
+    val providers = viewModel.getAvailableTtsProviders()
+    var selected by remember { mutableStateOf(viewModel.getSelectedTtsProvider()) }
+    var voiceId by remember { mutableStateOf(viewModel.getSavedTtsVoice()) }
+    var speed by remember { mutableStateOf(viewModel.getSavedTtsSpeed()) }
+    var pitch by remember { mutableStateOf(viewModel.getSavedTtsPitch()) }
+    var elevenKey by remember { mutableStateOf(viewModel.getTtsApiKey("elevenlabs") ?: "") }
+    val ttsTestStatus by viewModel.ttsTestStatus.collectAsState()
 
     Column(modifier = Modifier.padding(16.dp)) {
         Text(text = "AI Providers", style = MaterialTheme.typography.h6)
@@ -82,38 +83,43 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             }
         }
 
-        OutlinedTextField(value = voiceId, onValueChange = { voiceId = it }, label = { Text("Voice ID / Name") }, modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.padding(8.dp))
+        OutlinedTextField(value = elevenKey, onValueChange = { elevenKey = it }, label = { Text("ElevenLabs API Key") }, modifier = Modifier.fillMaxWidth(), visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation())
         Row(modifier = Modifier.fillMaxWidth()) {
-            Text("Speed: ${String.format("%.2f", speed)}")
-            Slider(value = speed, onValueChange = { speed = it }, valueRange = 0.5f..2.0f)
-        }
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Text("Pitch: ${String.format("%.2f", pitch)}")
-            Slider(value = pitch, onValueChange = { pitch = it }, valueRange = 0.5f..2.0f)
-        }
-        Row {
-            Button(onClick = { viewModel.saveTtsVoice(voiceId); viewModel.saveTtsSpeed(speed); viewModel.saveTtsPitch(pitch) }) { Text("Save TTS Settings") }
+            Button(onClick = { viewModel.saveTtsApiKey("elevenlabs", elevenKey); Toast.makeText(context, "Saved ElevenLabs key", Toast.LENGTH_SHORT).show() }) { Text("Save API Key") }
             Spacer(modifier = Modifier.padding(8.dp))
-            Button(onClick = { viewModel.testTts(selected, voiceId, speed, pitch) }) { Text("Test TTS") }
+            Button(onClick = { viewModel.clearTtsApiKey("elevenlabs"); elevenKey = "" }) { Text("Clear") }
         }
-    }
-}
 
-@Composable
-fun DropdownMenuDemo(items: List<String>, selected: String, onSelect: (String) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    var selectedText by remember { mutableStateOf(selected) }
+        Spacer(modifier = Modifier.padding(8.dp))
+        OutlinedTextField(value = voiceId, onValueChange = { voiceId = it }, label = { Text("Voice ID / Name") }, modifier = Modifier.fillMaxWidth())
 
-    Column {
-        Button(onClick = { expanded = !expanded }) {
-            Text(selectedText.ifEmpty { "Select provider" })
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Text("Female natural voice")
+            Switch(checked = viewModel.getSavedFemalePref(), onCheckedChange = { viewModel.setFemalePref(it) })
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            items.forEach { item ->
-                DropdownMenuItem(onClick = { selectedText = item; expanded = false; onSelect(item) }) {
-                    Text(item)
-                }
-            }
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Text("Speed: ${String.format("%.2f", speed)}", modifier = Modifier.weight(1f))
+            Slider(value = speed, onValueChange = { speed = it }, valueRange = 0.5f..2.0f, modifier = Modifier.weight(2f))
+        }
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Text("Pitch: ${String.format("%.2f", pitch)}", modifier = Modifier.weight(1f))
+            Slider(value = pitch, onValueChange = { pitch = it }, valueRange = 0.5f..2.0f, modifier = Modifier.weight(2f))
+        }
+
+        Spacer(modifier = Modifier.padding(8.dp))
+        Row {
+            Button(onClick = { viewModel.saveTtsVoice(voiceId); viewModel.saveTtsSpeed(speed); viewModel.saveTtsPitch(pitch); Toast.makeText(context, "Saved TTS settings", Toast.LENGTH_SHORT).show() }) { Text("Save TTS Settings") }
+            Spacer(modifier = Modifier.padding(8.dp))
+            Button(onClick = { viewModel.testTts(selected, voiceId, speed, pitch) }) { Text("Test Voice") }
+        }
+
+        when (val t = ttsTestStatus) {
+            is TtsTestState.Testing -> Text("Testing voice...", modifier = Modifier.padding(top = 8.dp))
+            is TtsTestState.Success -> Text("Success: ${t.message}", color = MaterialTheme.colors.primary, modifier = Modifier.padding(top = 8.dp))
+            is TtsTestState.Failure -> Text("Failure: ${t.message}", color = MaterialTheme.colors.error, modifier = Modifier.padding(top = 8.dp))
+            else -> {}
         }
     }
 }
