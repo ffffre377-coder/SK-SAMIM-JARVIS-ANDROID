@@ -1,24 +1,69 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.samim.jarvis">
 
+    <!-- Required runtime permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- Android 13+ granular media permissions -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <!-- Legacy storage for older Android versions -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <!-- Notifications (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name="com.samim.jarvis.JarvisApplication"
         android:allowBackup="true"
-        android:label="SK-SAMIM-JARVIS"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/Theme.Jarvis">
-        <activity android:name="com.samim.jarvis.MainActivity"
-            android:exported="true">
+
+        <!-- Adaptive icon and splash are configured in resources; keep MainActivity as the app entry -->
+        <activity android:name="com.samim.jarvis.SplashActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <service android:name="com.samim.jarvis.voice.VoiceAssistantService" android:exported="false" />
+        <activity android:name="com.samim.jarvis.MainActivity" android:exported="true" />
+
+        <!-- Foreground service for wake-word and background listening -->
+        <service
+            android:name="com.samim.jarvis.voice.VoiceAssistantService"
+            android:exported="false"
+            android:foregroundServiceType="microphone|phoneCall" />
+
+        <!-- Accessibility service; user must enable this in system Settings -->
+        <service
+            android:name="com.samim.jarvis.voice.permissions.JarvisAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- FileProvider to securely share files with other apps (used for WhatsApp sharing, etc.) -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
     </application>
 
 </manifest>
