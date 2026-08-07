@@ -15,7 +15,14 @@ class ElevenLabsTtsAdapter(private val secureStorage: SecureStorage) : TtsProvid
     override val name: String = "ElevenLabs"
     private val client = OkHttpClient()
 
-    override suspend fun synthesize(text: String, voice: String?, speed: Float?, pitch: Float?, lang: String?): Result<ByteArray> {
+    override suspend fun synthesize(
+        text: String,
+        voice: String?,
+        speed: Float?,
+        pitch: Float?,
+        lang: String?,
+        meta: Map<String, String>?
+    ): Result<ByteArray> {
         return withContext(Dispatchers.IO) {
             try {
                 val apiKey = secureStorage.getString("elevenlabs_api_key")
