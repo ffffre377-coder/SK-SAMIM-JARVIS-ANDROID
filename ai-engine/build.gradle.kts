@@ -25,5 +25,6 @@ android {
 dependencies {
     implementation(project(":api-manager"))
     implementation(project(":memory"))
+    implementation(project(":security"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 }
