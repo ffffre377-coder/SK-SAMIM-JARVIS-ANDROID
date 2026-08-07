@@ -39,7 +39,6 @@ class CommandRouter(private val context: Context, private val secureStorage: Sec
                 CoroutineScope(Dispatchers.Main).launch {
                     val results = fileAssistant.searchFiles(q ?: "")
                     if (results.isNotEmpty()) {
-                        // open first result
                         fileAssistant.openFile(results.first())
                         onResult(true, "Opened ${results.first()}")
                     } else {
@@ -51,10 +50,8 @@ class CommandRouter(private val context: Context, private val secureStorage: Sec
         }
 
         if (lowered.contains("send this file") || lowered.contains("send this photo") || lowered.contains("send this")) {
-            // In real flow, we need context of the current file; here we prompt user to pick
             requestConfirmation("Share file", "Do you want to share the last captured photo or selected file?", {
                 CoroutineScope(Dispatchers.Main).launch {
-                    // Attempt to find recent image
                     val recent = mediaAssistant.searchMedia("").firstOrNull()
                     if (recent != null) {
                         mediaAssistant.shareMedia(recent)
@@ -86,7 +83,6 @@ class CommandRouter(private val context: Context, private val secureStorage: Sec
 
         // Coding commands
         if (lowered.contains("create python code") || lowered.contains("create python") || lowered.matches(Regex("create .* code"))) {
-            // extract language
             val lang = when {
                 lowered.contains("python") -> "python"
                 lowered.contains("java") -> "java"
@@ -111,7 +107,6 @@ class CommandRouter(private val context: Context, private val secureStorage: Sec
             if (!appQuery.isNullOrBlank()) {
                 requestConfirmation("Open app", "Open app matching '$appQuery'?", {
                     CoroutineScope(Dispatchers.Main).launch {
-                        // Use AppResolver to find package
                         val pkg = AppResolver.resolvePackageForAppName(context, appQuery)
                         if (pkg != null) {
                             val launch = context.packageManager.getLaunchIntentForPackage(pkg)
@@ -139,7 +134,7 @@ class CommandRouter(private val context: Context, private val secureStorage: Sec
             return true
         }
 
-        if (lowered.contains("send this photo on whatsapp") || lowered.contains("send this photo on whatsapp") || lowered.contains("send this photo to whatsapp")) {
+        if (lowered.contains("send this photo on whatsapp") || lowered.contains("send this photo to whatsapp")) {
             requestConfirmation("Send photo", "Send the most recent photo via WhatsApp?", {
                 CoroutineScope(Dispatchers.Main).launch {
                     val recent = mediaAssistant.searchMedia("").firstOrNull()
@@ -163,7 +158,6 @@ class CommandRouter(private val context: Context, private val secureStorage: Sec
                         onResult(false, "Missing READ_CONTACTS permission")
                         return@launch
                     }
-                    // Find possible contacts
                     val matches = ContactSearch.findContactsByName(context, contact)
                     if (matches.isEmpty()) {
                         onResult(false, "Could not find contact $contact")
@@ -175,9 +169,7 @@ class CommandRouter(private val context: Context, private val secureStorage: Sec
                         onResult(true, "Opened WhatsApp chat for $contact")
                         return@launch
                     }
-                    // Multiple matches — delegate selection to UI by broadcasting matches and a continuation.
                     SelectionBroadcaster.notifyContactSelection(matches) { chosenPhone ->
-                        // continuation invoked by UI when the user selects a phone
                         WhatsAppHelper.sendTextToContactViaApi(context, chosenPhone, "")
                     }
                     onResult(true, "Multiple contacts found for $contact — please select in UI")
@@ -186,59 +178,70 @@ class CommandRouter(private val context: Context, private val secureStorage: Sec
             return true
         }
 
-+        // Call commands: "call John", "call [contact name]"
-+        val callMatch = Regex("call (.+)").find(lowered)
-+        if (callMatch != null) {
-+            val contact = callMatch.groupValues[1].trim()
-+            requestConfirmation("Place call", "Call $contact?", {
-+                CoroutineScope(Dispatchers.Main).launch {
-+                    if (!ContactResolver.hasContactsPermission(context)) {
-+                        onResult(false, "Missing READ_CONTACTS permission")
-+                        return@launch
-+                    }
-+                    val matches = ContactSearch.findContactsByName(context, contact)
-+                    if (matches.isEmpty()) {
-+                        onResult(false, "Could not find contact $contact")
-+                        return@launch
-+                    }
-+                    if (matches.size == 1) {
-+                        val phone = matches.first().second
-+                        CallHelper.placeCall(context, phone)
-+                        onResult(true, "Dialing $contact")
-+                        return@launch
-+                    }
-+                    // multiple matches: broadcast for UI selection; continuation will place call
-+                    SelectionBroadcaster.notifyContactSelection(matches) { chosenPhone ->
-+                        CallHelper.placeCall(context, chosenPhone)
-+                    }
-+                    onResult(true, "Multiple contacts found for $contact — please select in UI")
-+                }
-+            })
-+            return true
-+        }
-+
-+        // Open website commands: "open website example.com", "go to example.com", "open website" or "open site"
-+        val openSiteMatch = Regex("open (website|site|web|browser) (.+)").find(lowered) ?: Regex("go to (.+)").find(lowered)
-+        if (openSiteMatch != null) {
-+            val site = openSiteMatch.groupValues.last().trim()
-+            requestConfirmation("Open website", "Open website $site?", {
-+                CoroutineScope(Dispatchers.Main).launch {
-+                    try {
-+                        val url = if (site.contains(".") || site.startsWith("http")) {
-+                            if (site.startsWith("http")) site else "https://$site"
-+                        } else {
-+                            // perform a search
-+                            "https://www.google.com/search?q=" + android.net.Uri.encode(site)
-+                        }
-+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-+                        context.startActivity(intent)
-+                        onResult(true, "Opening $site")
-+                    } catch (e: Exception) {
-+                        onResult(false, "Failed to open $site")
-+                    }
-+                }
-+            })
-+            return true
-+        }
-+
-*** End Patch
+        // Call commands: "call John", "call [contact name]"
+        val callMatch = Regex("call (.+)").find(lowered)
+        if (callMatch != null) {
+            val contact = callMatch.groupValues[1].trim()
+            requestConfirmation("Place call", "Call $contact?", {
+                CoroutineScope(Dispatchers.Main).launch {
+                    if (!ContactResolver.hasContactsPermission(context)) {
+                        onResult(false, "Missing READ_CONTACTS permission")
+                        return@launch
+                    }
+                    val matches = ContactSearch.findContactsByName(context, contact)
+                    if (matches.isEmpty()) {
+                        onResult(false, "Could not find contact $contact")
+                        return@launch
+                    }
+                    if (matches.size == 1) {
+                        val phone = matches.first().second
+                        CallHelper.placeCall(context, phone)
+                        onResult(true, "Dialing $contact")
+                        return@launch
+                    }
+                    SelectionBroadcaster.notifyContactSelection(matches) { chosenPhone ->
+                        CallHelper.placeCall(context, chosenPhone)
+                    }
+                    onResult(true, "Multiple contacts found for $contact — please select in UI")
+                }
+            })
+            return true
+        }
+
+        // Open website commands: "open website example.com", "go to example.com"
+        val openSiteMatch = Regex("open (website|site|web|browser) (.+)").find(lowered) ?: Regex("go to (.+)").find(lowered)
+        if (openSiteMatch != null) {
+            val site = openSiteMatch.groupValues.last().trim()
+            requestConfirmation("Open website", "Open website $site?", {
+                CoroutineScope(Dispatchers.Main).launch {
+                    try {
+                        val url = if (site.contains(".") || site.startsWith("http")) {
+                            if (site.startsWith("http")) site else "https://$site"
+                        } else {
+                            "https://www.google.com/search?q=" + Uri.encode(site)
+                        }
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                        context.startActivity(intent)
+                        onResult(true, "Opening $site")
+                    } catch (e: Exception) {
+                        onResult(false, "Failed to open $site")
+                    }
+                }
+            })
+            return true
+        }
+
+        return false
+    }
+
+    private fun extractQuery(text: String, patterns: List<String>): String? {
+        for (p in patterns) {
+            if (text.contains(p)) {
+                val idx = text.indexOf(p) + p.length
+                val rest = text.substring(idx).trim()
+                return if (rest.isBlank()) null else rest
+            }
+        }
+        return null
+    }
+}
