@@ -37,4 +37,32 @@ class VoiceProviderRepository(private val secureStorage: SecureStorage) {
             "AndroidTTS"
         )
     }
+
+    suspend fun getConfig(name: String): ProviderConfig = withContext(Dispatchers.IO) {
+        ProviderConfig(
+            name = name,
+            apiKey = getApiKey(name),
+            enabled = isEnabled(name),
+            voiceId = secureStorage.getString(key(name, "voiceid"))?.ifEmpty { null },
+            priority = getPriority(name)
+        )
+    }
+
+    suspend fun saveConfig(config: ProviderConfig) = withContext(Dispatchers.IO) {
+        secureStorage.putString(key(config.name, "apikey"), config.apiKey ?: "")
+        secureStorage.putString(key(config.name, "enabled"), config.enabled.toString())
+        secureStorage.putString(key(config.name, "voiceid"), config.voiceId ?: "")
+        secureStorage.putString(key(config.name, "priority"), config.priority.toString())
+    }
+
+    suspend fun deleteConfig(name: String) = withContext(Dispatchers.IO) {
+        secureStorage.putString(key(name, "apikey"), "")
+        secureStorage.putString(key(name, "enabled"), "false")
+        secureStorage.putString(key(name, "voiceid"), "")
+        secureStorage.putString(key(name, "priority"), "0")
+    }
+
+    suspend fun listSupportedProviders(): List<ProviderConfig> = withContext(Dispatchers.IO) {
+        listSupportedNames().map { getConfig(it) }
+    }
 }
