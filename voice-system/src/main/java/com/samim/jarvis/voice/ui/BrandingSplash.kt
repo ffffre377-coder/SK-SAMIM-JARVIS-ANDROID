@@ -29,7 +29,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.samim.jarvis.voice.ShellUtils
 
 @Composable
 fun BrandingSplash(onComplete: () -> Unit) {
