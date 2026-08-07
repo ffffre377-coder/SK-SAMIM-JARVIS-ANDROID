@@ -5,12 +5,19 @@ import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Button
+import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.samim.jarvis.voice.permissions.PermissionManager
@@ -48,5 +55,26 @@ fun AccessibilityOnboardingScreen(context: Context, secureStorage: SecureStorage
         Button(onClick = { /* Optionally start a quick demo or run a diagnostic */ }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
             Text("Run onboarding diagnostic")
         }
+    }
+}
+
+@Composable
+fun FeatureToggleRow(label: String, key: String, secureStorage: SecureStorage) {
+    var checked by remember {
+        mutableStateOf(secureStorage.getString(key)?.toBoolean() ?: false)
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, modifier = Modifier.padding(end = 8.dp))
+        Switch(
+            checked = checked,
+            onCheckedChange = { newValue ->
+                checked = newValue
+                secureStorage.putString(key, newValue.toString())
+            }
+        )
     }
 }
