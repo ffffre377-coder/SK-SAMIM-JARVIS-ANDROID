@@ -34,6 +34,14 @@ class TextToSpeechManager(private val context: Context) : TextToSpeech.OnInitLis
         if (initialized) tts?.language = locale
     }
 
+    fun setSpeechRate(rate: Float) {
+        tts?.setSpeechRate(rate)
+    }
+
+    fun setPitch(pitch: Float) {
+        tts?.setPitch(pitch)
+    }
+
     fun speak(text: String) {
         CoroutineScope(Dispatchers.Main).launch {
             // attempt to choose a female voice if requested
