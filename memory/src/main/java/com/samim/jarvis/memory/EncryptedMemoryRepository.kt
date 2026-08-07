@@ -15,6 +15,7 @@ class EncryptedMemoryRepository(private val secureStorage: SecureStorage) : Memo
     override suspend fun putString(key: String, value: String) {
         withContext(Dispatchers.IO) {
             secureStorage.putString(fullKey(key), value)
+            addToRegistry(key)
         }
     }
 
@@ -46,13 +47,6 @@ class EncryptedMemoryRepository(private val secureStorage: SecureStorage) : Memo
                 keys.add(key)
                 secureStorage.putString(registryKey, keys.joinToString(";"))
             }
-        }
-    }
-
-    override suspend fun putString(key: String, value: String) {
-        withContext(Dispatchers.IO) {
-            secureStorage.putString(fullKey(key), value)
-            addToRegistry(key)
         }
     }
 }
