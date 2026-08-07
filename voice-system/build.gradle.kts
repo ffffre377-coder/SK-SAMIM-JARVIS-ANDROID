@@ -33,6 +33,8 @@ android {
 }
 
 dependencies {
+    implementation(project(":security"))
+    implementation(project(":ai-engine"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
 
