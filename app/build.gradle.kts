@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.samim.jarvis"
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.samim.jarvis"
         minSdk = 21
-        targetSdk = 33
+        targetSdk = 34
         versionCode = 1
         versionName = "0.1.0"
     }
