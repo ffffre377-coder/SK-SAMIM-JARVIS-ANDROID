@@ -20,7 +20,7 @@ fun WaveformBar(listening: Boolean) {
     val levels = remember { List(16) { mutableStateOf(0f) } }
     LaunchedEffect(listening) {
         while (listening) {
-            levels.forEach { it.value = (0.1f..1f).random() }
+            levels.forEach { it.value = kotlin.random.Random.nextFloat() * 0.9f + 0.1f }
             kotlinx.coroutines.delay(150)
         }
         levels.forEach { it.value = 0f }
