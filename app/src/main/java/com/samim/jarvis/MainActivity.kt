@@ -23,6 +23,15 @@ import com.samim.jarvis.ui.settings.SettingsScreen
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        CrashHandler.getLastCrash(this)?.let { crashLog ->
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Last Crash")
+                .setMessage(crashLog)
+                .setPositiveButton("OK") { _, _ -> CrashHandler.clearLastCrash(this) }
+                .show()
+        }
+
         setContent {
             JarvisApp()
         }
@@ -71,11 +80,9 @@ fun AppBottomBar(navController: NavHostController) {
                 onClick = {
                     if (currentRoute != screen.route) {
                         navController.navigate(screen.route) {
-                            // Pop up to the start destination to avoid building a large back stack
                             popUpTo(navController.graph.startDestinationId) {
                                 saveState = true
                             }
-                            // Avoid multiple copies of the same destination
                             launchSingleTop = true
                             restoreState = true
                         }
