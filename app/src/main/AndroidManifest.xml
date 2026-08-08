@@ -25,14 +25,12 @@
         android:theme="@style/Theme.Jarvis">
 
         <!-- Adaptive icon and splash are configured in resources; keep MainActivity as the app entry -->
-        <activity android:name="com.samim.jarvis.SplashActivity" android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity android:name="com.samim.jarvis.MainActivity" android:exported="true" />
+        <activity android:name="com.samim.jarvis.MainActivity" android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
 
         <!-- Foreground service for wake-word and background listening -->
         <service
