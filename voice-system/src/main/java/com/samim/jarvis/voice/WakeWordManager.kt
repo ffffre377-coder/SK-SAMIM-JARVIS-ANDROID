@@ -1,52 +1,102 @@
-package com.samim.jarvis.voice
+package com.samim.jarvis.di
 
 import android.content.Context
-import android.util.Log
+import androidx.room.Room
+import com.samim.jarvis.ai.AIProviderManager
+import com.samim.jarvis.ai.GeminiAdapter
+import com.samim.jarvis.ai.OpenAIAdapter
+import com.samim.jarvis.api.ApiManager
+import com.samim.jarvis.memory.AppDatabase
+import com.samim.jarvis.memory.ConversationDao
+import com.samim.jarvis.memory.MessageDao
+import com.samim.jarvis.security.SecureStorage
+import com.samim.jarvis.voice.ElevenLabsTtsAdapter
+import com.samim.jarvis.voice.GoogleTtsAdapter
+import com.samim.jarvis.voice.PorcupineManager
+import com.samim.jarvis.voice.SpeechToTextManager
+import com.samim.jarvis.voice.TtsPlayback
+import com.samim.jarvis.voice.TtsProvider
+import com.samim.jarvis.voice.TtsProviderManager
+import com.samim.jarvis.voice.TextToSpeechManager
+import com.samim.jarvis.voice.WakeWordManager
+import com.samim.jarvis.voice.providers.VoiceProviderRepository
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
-/**
- * WakeWordManager: wrapper around PorcupineManager scaffold that exposes enable/disable, custom keyword, and lifecycle control.
- * This is a scaffold — real wake-word integration requires adding a native SDK and keyword models.
- */
-class WakeWordManager(private val context: Context) {
+@Module
+@InstallIn(SingletonComponent::class)
+object AppModule {
 
-    private val porcupine = PorcupineManager(context)
-    private var enabled: Boolean = false
-    private var keyword: String = "hey samim"
-
-    interface Listener {
-        fun onWakeWord()
+    @Provides
+    @Singleton
+    fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
+        return Room.databaseBuilder(context, AppDatabase::class.java, "jarvis.db")
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
-    private var listener: Listener? = null
+    @Provides
+    fun provideConversationDao(db: AppDatabase): ConversationDao = db.conversationDao()
 
-    fun setListener(l: Listener) {
-        this.listener = l
-        porcupine.setListener(object : PorcupineManager.Listener {
-            override fun onWakeWordDetected() {
-                listener?.onWakeWord()
-            }
-        })
+    @Provides
+    fun provideMessageDao(db: AppDatabase): MessageDao = db.messageDao()
+
+    @Provides
+    @Singleton
+    fun provideSecureStorage(@ApplicationContext context: Context): SecureStorage = SecureStorage(context)
+
+    @Provides
+    @Singleton
+    fun provideApiManager(): ApiManager = ApiManager()
+
+    @Provides
+    @Singleton
+    fun provideTextToSpeechManager(@ApplicationContext context: Context): TextToSpeechManager = TextToSpeechManager(context)
+
+    @Provides
+    @Singleton
+    fun provideSpeechToTextManager(@ApplicationContext context: Context): SpeechToTextManager = SpeechToTextManager(context)
+
+    @Provides
+    @Singleton
+    fun providePorcupineManager(@ApplicationContext context: Context): PorcupineManager = PorcupineManager(context)
+
+    @Provides
+    @Singleton
+    fun provideTtsPlayback(@ApplicationContext context: Context): TtsPlayback = TtsPlayback(context)
+
+    @Provides
+    @Singleton
+    fun provideTtsProviders(secureStorage: SecureStorage): @JvmSuppressWildcards List<TtsProvider> {
+        return listOf(
+            ElevenLabsTtsAdapter(secureStorage),
+            GoogleTtsAdapter(secureStorage)
+        )
     }
 
-    fun setKeyword(phrase: String) {
-        // In a real integration we would reload model for this keyword
-        keyword = phrase.trim().lowercase()
-        Log.d("WakeWordManager", "setKeyword scaffold: $keyword")
-    }
+    @Provides
+    @Singleton
+    fun provideTtsProviderManager(providers: @JvmSuppressWildcards List<TtsProvider>, secureStorage: SecureStorage): TtsProviderManager = TtsProviderManager(providers, secureStorage)
 
-    fun start() {
-        if (!enabled) return
-        porcupine.start()
-    }
+    @Provides
+    @Singleton
+    fun provideVoiceProviderRepository(secureStorage: SecureStorage): VoiceProviderRepository = VoiceProviderRepository(secureStorage)
 
-    fun stop() {
-        porcupine.stop()
-    }
+    @Provides
+    @Singleton
+    fun provideWakeWordManager(@ApplicationContext context: Context): WakeWordManager = WakeWordManager(context)
 
-    fun enable(enabled: Boolean) {
-        this.enabled = enabled
-        if (enabled) start() else stop()
+    @Provides
+    @Singleton
+    fun provideAIProviderManager(apiManager: ApiManager, secureStorage: SecureStorage): AIProviderManager {
+        val providers = listOf(
+            OpenAIAdapter(apiManager, secureStorage),
+            GeminiAdapter(apiManager, secureStorage)
+        )
+        return AIProviderManager(providers)
     }
-
-    fun isEnabled(): Boolean = enabled
 }
