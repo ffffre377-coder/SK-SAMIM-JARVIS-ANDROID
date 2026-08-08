@@ -2,9 +2,13 @@ package com.samim.jarvis.ui.settings
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -18,7 +22,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
 
-    // TTS provider list from ViewModel
     val providers = viewModel.getAvailableTtsProviders()
     var selected by remember { mutableStateOf(viewModel.getSelectedTtsProvider()) }
     var voiceId by remember { mutableStateOf(viewModel.getSavedTtsVoice()) }
@@ -31,7 +34,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         Text(text = "AI Providers", style = MaterialTheme.typography.h6)
         Spacer(modifier = Modifier.padding(8.dp))
 
-        // Existing provider cards
         state.providers.forEach { provider ->
             Card(modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
@@ -48,7 +50,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         visualTransformation = if (provider.visible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
                         trailingIcon = {
                             IconButton(onClick = { viewModel.toggleVisibility(provider.id) }) {
-                                Icon(imageVector = if (provider.visible) androidx.compose.material.icons.Icons.Default.VisibilityOff else androidx.compose.material.icons.Icons.Default.Visibility, contentDescription = null)
+                                Icon(imageVector = if (provider.visible) Icons.Default.VisibilityOff else Icons.Default.Visibility, contentDescription = null)
                             }
                         }
                     )
