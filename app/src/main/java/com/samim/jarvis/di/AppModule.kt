@@ -18,6 +18,7 @@ import com.samim.jarvis.voice.TtsPlayback
 import com.samim.jarvis.voice.TtsProvider
 import com.samim.jarvis.voice.TtsProviderManager
 import com.samim.jarvis.voice.TextToSpeechManager
+import com.samim.jarvis.voice.providers.VoiceProviderRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -69,7 +70,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideTtsProviders(secureStorage: SecureStorage): List<TtsProvider> {
+    fun provideTtsProviders(secureStorage: SecureStorage): @JvmSuppressWildcards List<TtsProvider> {
         return listOf(
             ElevenLabsTtsAdapter(secureStorage),
             GoogleTtsAdapter(secureStorage)
@@ -78,7 +79,11 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideTtsProviderManager(providers: List<TtsProvider>, secureStorage: SecureStorage): TtsProviderManager = TtsProviderManager(providers, secureStorage)
+    fun provideTtsProviderManager(providers: @JvmSuppressWildcards List<TtsProvider>, secureStorage: SecureStorage): TtsProviderManager = TtsProviderManager(providers, secureStorage)
+
+    @Provides
+    @Singleton
+    fun provideVoiceProviderRepository(secureStorage: SecureStorage): VoiceProviderRepository = VoiceProviderRepository(secureStorage)
 
     @Provides
     @Singleton
