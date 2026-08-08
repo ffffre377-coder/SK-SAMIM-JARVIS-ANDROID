@@ -24,6 +24,9 @@ class SettingsViewModel @Inject constructor(
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
 
+    private val _ttsTestStatus = MutableStateFlow<TtsTestState>(TtsTestState.Idle)
+    val ttsTestStatus: StateFlow<TtsTestState> = _ttsTestStatus.asStateFlow()
+
     private val providerDefs = listOf(
         ProviderSetting(id = "openai", displayName = "OpenAI"),
         ProviderSetting(id = "gemini", displayName = "Gemini"),
@@ -47,7 +50,6 @@ class SettingsViewModel @Inject constructor(
             )
         }
         _state.value = SettingsState(list)
-        // set enabled providers in provider manager
         aiProviderManager.setEnabledProviders(list.filter { it.enabled }.map { it.id.capitalizeName() }.toSet())
     }
 
@@ -72,7 +74,6 @@ class SettingsViewModel @Inject constructor(
         _state.value = SettingsState(list)
         val enabledKey = getEnabledStorageKey(id)
         secureStorage.putString(enabledKey, enabled.toString())
-        // update AI provider manager
         aiProviderManager.enableProvider(id.capitalizeName(), enabled)
     }
 
@@ -80,7 +81,6 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val list = _state.value.providers
             val provider = list.first { it.id == id }
-            // update status to testing
             updateStatus(id, ProviderStatus.Testing)
 
             val (baseUrl, path) = when (id) {
@@ -111,6 +111,46 @@ class SettingsViewModel @Inject constructor(
     private fun getEnabledStorageKey(id: String) = "${id}_enabled"
 
     // TTS settings
+    fun getAvailableTtsProviders(): List<String> {
+        return listOf("AndroidTTS", "ElevenLabs", "GoogleTTS")
+    }
+
+    fun getSelectedTtsProvider(): String {
+        return secureStorage.getString("tts_provider") ?: "AndroidTTS"
+    }
+
+    fun getSavedTtsVoice(): String {
+        return secureStorage.getString("tts_voice") ?: ""
+    }
+
+    fun getSavedTtsSpeed(): Float {
+        return secureStorage.getString("tts_speed")?.toFloatOrNull() ?: 1.0f
+    }
+
+    fun getSavedTtsPitch(): Float {
+        return secureStorage.getString("tts_pitch")?.toFloatOrNull() ?: 1.0f
+    }
+
+    fun getTtsApiKey(provider: String): String? {
+        return secureStorage.getString("${provider}_api_key")
+    }
+
+    fun saveTtsApiKey(provider: String, key: String) {
+        secureStorage.putString("${provider}_api_key", key)
+    }
+
+    fun clearTtsApiKey(provider: String) {
+        secureStorage.putString("${provider}_api_key", "")
+    }
+
+    fun getSavedFemalePref(): Boolean {
+        return secureStorage.getString("tts_female_pref")?.toBoolean() ?: false
+    }
+
+    fun setFemalePref(value: Boolean) {
+        secureStorage.putString("tts_female_pref", value.toString())
+    }
+
     fun saveTtsProvider(provider: String) {
         secureStorage.putString("tts_provider", provider)
     }
@@ -129,15 +169,17 @@ class SettingsViewModel @Inject constructor(
 
     fun testTts(providerName: String, voiceId: String, speed: Float, pitch: Float) {
         viewModelScope.launch {
+            _ttsTestStatus.value = TtsTestState.Testing
             val provider = ttsProviderManager.getProviderByName(providerName)
             if (provider == null) {
-                // no provider
+                _ttsTestStatus.value = TtsTestState.Failure("Provider not found")
                 return@launch
             }
             val res = provider.synthesize("This is a test of the selected voice.", voiceId, speed, pitch, "en-US")
             if (res.isSuccess) {
-                // play audio via TtsPlayback
-                // We can't access TtsPlayback here; instead we save to cache and let VoiceAssistant handle playback; for now, nothing
+                _ttsTestStatus.value = TtsTestState.Success("Voice test completed")
+            } else {
+                _ttsTestStatus.value = TtsTestState.Failure(res.exceptionOrNull()?.message ?: "Unknown error")
             }
         }
     }
