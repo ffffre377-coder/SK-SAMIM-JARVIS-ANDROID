@@ -18,6 +18,7 @@ import com.samim.jarvis.voice.TtsPlayback
 import com.samim.jarvis.voice.TtsProvider
 import com.samim.jarvis.voice.TtsProviderManager
 import com.samim.jarvis.voice.TextToSpeechManager
+import com.samim.jarvis.voice.WakeWordManager
 import com.samim.jarvis.voice.providers.VoiceProviderRepository
 import dagger.Module
 import dagger.Provides
@@ -84,6 +85,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideVoiceProviderRepository(secureStorage: SecureStorage): VoiceProviderRepository = VoiceProviderRepository(secureStorage)
+
+    @Provides
+    @Singleton
+    fun provideWakeWordManager(@ApplicationContext context: Context): WakeWordManager = WakeWordManager(context)
 
     @Provides
     @Singleton
