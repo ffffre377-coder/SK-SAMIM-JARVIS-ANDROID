@@ -1,13 +1,3 @@
-Mil gaya — 2 dependencies missing hain:
-1. **hilt-navigation-compose** → `hiltViewModel()` ke liye
-2. **material-icons-extended** → `Visibility`/`VisibilityOff` icons ke liye
-3. **compose foundation** → `Spacer` ke liye (explicitly add karna padega)
-
-**Fix:** `dependencies { }` block mein, Compose wali lines ke beech ye 3 add karo:
-
-**Poori file copy karke paste kar do:**
-
-```kotlin
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -90,6 +80,3 @@ dependencies {
 kapt {
     correctErrorTypes = true
 }
-```
-
-Commit karo, phir "ho gaya" bolo — naya build check karenge.
