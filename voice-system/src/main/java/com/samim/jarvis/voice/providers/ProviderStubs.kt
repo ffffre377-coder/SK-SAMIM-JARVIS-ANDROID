@@ -13,7 +13,9 @@ fun createDefaultStubs(repo: VoiceProviderRepository): List<TtsProvider> {
         StubRemoteProvider("Cartesia", repo),
         StubRemoteProvider("PlayHT", repo),
         StubRemoteProvider("Deepgram", repo),
-        StubRemoteProvider("Coqui", repo),
-        AndroidTtsProvider(/** caller should pass TextToSpeechManager when used with DI */ TODO())
+        StubRemoteProvider("Coqui", repo)
+        // AndroidTtsProvider omitted here because it requires a TextToSpeechManager instance which
+        // cannot be created from this helper without a Context. If you want AndroidTtsProvider
+        // in the default list, change this helper to accept a TextToSpeechManager parameter.
     )
 }
